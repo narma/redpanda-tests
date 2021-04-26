@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 
 object RedpandaContainer {
   private val starterScript = "/testcontainers_start.sh";
-  val dockerTag: String     = "v21.4.14"
+  val dockerTag: String     = "latest"
 
   // testcontainers-scala ForEachTestContainer / ForAllTestContainers required com.dimafeng.testcontainers.Container trait
   class RedpandaScalaContainer(underlying: RedpandaContainer) extends SingleContainer[RedpandaContainer] {
