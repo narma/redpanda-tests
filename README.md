@@ -12,5 +12,10 @@ This projects uses [sbt](https://www.scala-sbt.org/) and [scalatest](https://www
 - Run all tests for Kafka: `testOnly app.KafkaSpec`
 
 ## Structure
-- All tests contains in `src/test/scala/app/AppTests.scala`
+All tests contains in `src/test/scala/app/AppTests.scala`
+
+Currently `latest` docker tag used without re-pull strategy.
+
+To update latest image consider using `docker pull` or re-build manually.
+Also dockerTag can be changed at RedpandaContainer definition in `src/test/scala/testcontainers/RedpandaContainer.scala` 
     
