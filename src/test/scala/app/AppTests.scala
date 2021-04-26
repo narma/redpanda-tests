@@ -17,7 +17,7 @@ trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
       recordsCount      = 2
       topicsCount       = 15
       producer         <- Stream.resource(mkProducer(bootstrapServers))
-      _                <- KafkaTestUtils.createTopicsSeq(blocker, bootstrapServers)(mkTopics(topicsCount))
+      _                <- KafkaTestUtils.createTopicsSeq[IO](bootstrapServers)(mkTopics(topicsCount))
       records           = mkRecords(topicsCount, recordsCount)
       result           <- push(records)(producer)
     } yield result.records.map(_._1) mustEqual records.records
@@ -32,7 +32,7 @@ trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
       records = ProducerRecords(
                   (1 to topicsCount).reverse.map(n => mkRecord(s"$n", s"hello$n", topic = s"output$n")).toList
                 )
-      _ <- KafkaTestUtils.createTopicsSeq(blocker, bootstrapServers, partitionCount = 31)(
+      _ <- KafkaTestUtils.createTopicsSeq[IO](bootstrapServers, partitionCount = 31)(
              mkTopics(topicsCount)
            )
       produceResult <- producer.produce(records).flatMap(identity)
@@ -63,15 +63,14 @@ trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
     KafkaProducer.resource(settings)
   }
 
-  def mkRecords(topicsCount: Int, recordsPerTopic: Int = 1): ProducerRecords[String, String, Unit] = ProducerRecords(
+  def mkRecords(topicsCount: Int, recordsPerTopic: Int = 1): ProducerRecords[Unit, String, String] = ProducerRecords(
     (1 to topicsCount).flatMap { topicNr =>
       (1 to recordsPerTopic).map(n => mkRecord(s"$n", s"hello$n", s"output$topicNr"))
     }.toList
   )
 
-  def push[P](records: ProducerRecords[String, String, P])(
+  def push[P](records: ProducerRecords[P, String, String])(
     producer: KafkaProducer[IO, String, String]
-  ): IO[ProducerResult[String, String, P]] =
-    producer.produce(records).flatMap(identity)
-
+  ): IO[ProducerResult[P, String, String]] =
+    producer.produce(records).flatten
 }

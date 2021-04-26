@@ -18,5 +18,6 @@ lazy val root = (project in file("."))
       ExclusionRule("org.slf4j", "slf4j-log4j12"),
       ExclusionRule("org.slf4j", "jul-to-slf4j")
     ),
-    welcomeMessage
+    welcomeMessage,
+    addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
   )
