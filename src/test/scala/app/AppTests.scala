@@ -4,8 +4,12 @@ import cats.effect.{IO, Resource}
 import com.dimafeng.testcontainers.ForEachTestContainer
 import fs2.Stream
 import fs2.kafka._
+import org.apache.kafka.common.TopicPartition
 import org.scalatest.matchers.must.Matchers
-import utils.{AppSpec, KafkaTestUtils}
+import utils.AppSpec
+import utils.KafkaTestUtils._
+
+import scala.concurrent.duration.DurationInt
 
 trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
   def ioBootstrapServers: IO[String]
@@ -17,7 +21,7 @@ trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
       recordsCount      = 2
       topicsCount       = 15
       producer         <- Stream.resource(mkProducer(bootstrapServers))
-      _                <- KafkaTestUtils.createTopicsSeq[IO](bootstrapServers)(mkTopics(topicsCount))
+      _                <- createTopicsSeq[IO](bootstrapServers)(mkTopics(topicsCount))
       records           = mkRecords(topicsCount, recordsCount)
       result           <- push(records)(producer)
     } yield result.records.map(_._1) mustEqual records.records
@@ -32,7 +36,7 @@ trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
       records = ProducerRecords(
                   (1 to topicsCount).reverse.map(n => mkRecord(s"$n", s"hello$n", topic = s"output$n")).toList
                 )
-      _ <- KafkaTestUtils.createTopicsSeq[IO](bootstrapServers, partitionCount = 31)(
+      _ <- createTopicsSeq[IO](bootstrapServers, partitionCount = 31)(
              mkTopics(topicsCount)
            )
       produceResult <- producer.produce(records).flatMap(identity)
@@ -45,6 +49,29 @@ trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
       records           = mkRecords(4)
       produceResult    <- mkProducer(bootstrapServers).use(push(records))
     } yield produceResult.records.map(_._1) mustEqual records.records
+  }
+
+  // flaky one: sometimes it succeeds for redpanda
+  it should "#4 latest and begin offsets for new topic should be zero" in {
+    for {
+      bootstrapServers <- streamBootstrapServers
+      consumerSettings = ConsumerSettings[IO, String, String]
+                           .withBootstrapServers(bootstrapServers)
+      consumer   <- KafkaConsumer.stream(consumerSettings)
+      topicsCount = 15
+      _          <- createTopicsSeq[IO](bootstrapServers, partitionCount = 31)(mkTopics(topicsCount))
+      testTopic   = s"output$topicsCount"
+      partitions <- consumer.partitionsFor(testTopic, 3.seconds)
+      topicPartitions = partitions.map { p =>
+                          new TopicPartition(p.topic(), p.partition())
+                        }.toSet
+      beginOffsets <- consumer.beginningOffsets(topicPartitions, 2.seconds)
+      endOffsets   <- consumer.endOffsets(topicPartitions, 2.seconds)
+    } yield {
+      // Redpanda (current = v21.4.15) can return Long.MinValue offset for some partitions
+      all(beginOffsets.values) must be(0L)
+      beginOffsets mustEqual endOffsets
+    }
   }
 
   def mkRecord(key: String, body: String, topic: String): ProducerRecord[String, String] =
