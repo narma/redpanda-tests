@@ -3,6 +3,7 @@ import sbt._
 object Dependencies {
   object V {
     val fs2kafka          = "2.0.0-RC2"
+    val fs2               = "3.0.2"
     val catsEffect        = "3.1.0"
     val catsEffectTesting = "1.1.0"
 
@@ -29,6 +30,7 @@ object Dependencies {
 
   val allDeps = Seq(
     "org.typelevel"   %% "cats-effect" % catsEffect,
+    "co.fs2"          %% "fs2-core"    % fs2,
     "com.github.fd4s" %% "fs2-kafka"   % fs2kafka
   ) ++ testDeps ++ logDeps
 }

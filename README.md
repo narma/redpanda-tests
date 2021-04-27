@@ -17,5 +17,6 @@ All tests contains in `src/test/scala/app/AppTests.scala`
 Currently `latest` docker tag used without re-pull strategy.
 
 To update latest image consider using `docker pull` or re-build manually.
-Also dockerTag can be changed at RedpandaContainer definition in `src/test/scala/testcontainers/RedpandaContainer.scala` 
+Also dockerTag can be changed at RedpandaContainer definition in `src/test/scala/testcontainers/RedpandaContainer.scala`
+or define it directly in `app.RedpandaSpec` at RedpandaContainer constructor.
     
