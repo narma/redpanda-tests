@@ -51,15 +51,14 @@ trait AppTests extends AppSpec with Matchers with ForEachTestContainer {
     } yield produceResult.records.map(_._1) mustEqual records.records
   }
 
-  // flaky one: sometimes it succeeds for redpanda
   it should "#4 latest and begin offsets for new topic should be zero" in {
     for {
       bootstrapServers <- streamBootstrapServers
       consumerSettings = ConsumerSettings[IO, String, String]
                            .withBootstrapServers(bootstrapServers)
       consumer   <- KafkaConsumer.stream(consumerSettings)
-      topicsCount = 15
-      _          <- createTopicsSeq[IO](bootstrapServers, partitionCount = 31)(mkTopics(topicsCount))
+      topicsCount = 1
+      _          <- createTopicsSeq[IO](bootstrapServers, partitionCount = 500)(mkTopics(topicsCount))
       testTopic   = s"output$topicsCount"
       partitions <- consumer.partitionsFor(testTopic, 3.seconds)
       topicPartitions = partitions.map { p =>
